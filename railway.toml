@@ -1,7 +1,7 @@
 [build]
-builder = "DOCKER"
-dockerfilePath = "docker-compose.yml"
-targetService = "ui"
+builder = "DOCKERFILE"
+dockerfilePath = "ui/Dockerfile.railway"
+buildPath = "ui"
 
 [deploy]
 startCommand = "nginx -g 'daemon off;'"
