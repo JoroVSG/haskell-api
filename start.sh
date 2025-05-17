@@ -1,13 +1,22 @@
 #!/bin/bash
 
+# Function to wait for PostgreSQL
+wait_for_postgres() {
+    echo "Waiting for PostgreSQL to be ready..."
+    while ! pg_isready -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" >/dev/null 2>&1; do
+        echo "PostgreSQL is unavailable - sleeping"
+        sleep 1
+    done
+    echo "PostgreSQL is up and running!"
+}
+
 # Wait for PostgreSQL to be ready
-until PGPASSWORD=$PGPASSWORD psql -h "$PGHOST" -U "$PGUSER" -d "$PGDATABASE" -c '\q'; do
-  echo "Postgres is unavailable - sleeping"
-  sleep 1
-done
+wait_for_postgres
 
-echo "Postgres is up - running migrations"
-PGPASSWORD=$PGPASSWORD psql -h "$PGHOST" -U "$PGUSER" -d "$PGDATABASE" -f migrations.sql
+# Run database migrations
+echo "Running database migrations..."
+psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -f migrations.sql
 
-echo "Starting application"
-exec ./haskell-api 
+# Start the application
+echo "Starting the application..."
+./haskell-api 
