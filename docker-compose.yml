@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   app:
     build: .
@@ -28,6 +30,15 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    environment:
+      - VITE_API_URL=https://hackathon-api-production-d702.up.railway.app
 
 volumes:
   postgres_data: 
