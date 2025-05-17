@@ -27,11 +27,13 @@ getIntEnvWithDefault key defaultValue = do
 -- Get database configuration from environment variables
 getDbConfig :: IO ConnectInfo
 getDbConfig = do
-    host <- getEnvWithDefault "DB_HOST" "localhost"
-    port <- getIntEnvWithDefault "DB_PORT" 5432
-    user <- getEnvWithDefault "DB_USER" "postgres"
-    password <- getEnvWithDefault "DB_PASSWORD" "postgres"
-    database <- getEnvWithDefault "DB_NAME" "haskell_api"
+    -- Try Railway's PGHOST first, then fall back to DB_HOST, then default
+    host <- getEnvWithDefault "PGHOST" =<< getEnvWithDefault "DB_HOST" "localhost"
+    -- Same for other variables
+    port <- getIntEnvWithDefault "PGPORT" =<< getIntEnvWithDefault "DB_PORT" 5432
+    user <- getEnvWithDefault "PGUSER" =<< getEnvWithDefault "DB_USER" "postgres"
+    password <- getEnvWithDefault "PGPASSWORD" =<< getEnvWithDefault "DB_PASSWORD" "postgres"
+    database <- getEnvWithDefault "PGDATABASE" =<< getEnvWithDefault "DB_NAME" "haskell_api"
     return ConnectInfo
         { connectHost = host
         , connectPort = fromIntegral port
