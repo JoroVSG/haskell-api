@@ -1,0 +1,32 @@
+name: haskell-api
+version: 0.1.0.0
+github: "JoroVSG/haskell-api"
+license: BSD3
+author: "JoroVSG"
+maintainer: "example@example.com"
+copyright: "2024 JoroVSG"
+
+description: Please see the README on GitHub at <https://github.com/JoroVSG/haskell-api#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- scotty
+- aeson
+- text
+- postgresql-simple
+- resource-pool
+- http-types
+- wai
+- wai-cors
+- wai-extra
+- transformers
+- mtl
+
+executables:
+  haskell-api:
+    main: Main.hs
+    source-dirs: src
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N 
