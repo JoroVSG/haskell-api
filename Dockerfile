@@ -20,9 +20,9 @@ RUN stack build --system-ghc
 # Start a new stage with a minimal image
 FROM ubuntu:22.04
 
-# Install required system libraries including PostgreSQL client
+# Install required system libraries
 RUN apt-get update && \
-    apt-get install -y libpq5 postgresql-client ca-certificates && \
+    apt-get install -y libpq5 ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user
@@ -32,16 +32,11 @@ USER app
 # Set working directory
 WORKDIR /home/app
 
-# Copy the built executable and migrations
+# Copy the built executable
 COPY --from=builder /app/.stack-work/dist/*/build/haskell-api/haskell-api ./
-COPY migrations.sql ./
-COPY start.sh ./
-
-# Make the startup script executable
-RUN chmod +x start.sh
 
 # Expose the port
 EXPOSE 3000
 
-# Run the startup script
-CMD ["./start.sh"] 
+# Run the application
+CMD ["./haskell-api"] 

@@ -5,8 +5,8 @@ module Main (main) where
 
 import qualified Web.Scotty as Scotty
 import Config (initDbPool, getDbConfig)
-import Data.Pool (Pool)
-import Database.PostgreSQL.Simple (Connection)
+import Data.Pool (Pool, withResource)
+import Database.PostgreSQL.Simple (Connection, execute_, Only(..))
 import Data.Aeson (ToJSON(..), FromJSON(..), object, (.=), Value)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
@@ -165,6 +165,21 @@ app pool = do
         Scotty.status status404
         Scotty.json $ object ["error" .= ("Route not found" :: String)]
 
+-- Run database migrations
+runMigrations :: Connection -> IO ()
+runMigrations conn = do
+    putStrLn "Running database migrations..."
+    execute_ conn "CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL)"
+    execute_ conn "DO $$ BEGIN \
+                 \    BEGIN \
+                 \        ALTER TABLE users ADD CONSTRAINT users_email_unique UNIQUE (email); \
+                 \    EXCEPTION \
+                 \        WHEN duplicate_table THEN \
+                 \        NULL; \
+                 \    END; \
+                 \$$;"
+    putStrLn "Migrations completed successfully"
+
 -- Get port from environment variable
 getPort :: IO Int
 getPort = do
@@ -176,4 +191,6 @@ main = do
     port <- getPort
     putStrLn $ "Starting server on port " ++ show port ++ "..."
     pool <- initDbPool
+    -- Run migrations
+    withResource pool runMigrations
     Scotty.scotty port (app pool)
