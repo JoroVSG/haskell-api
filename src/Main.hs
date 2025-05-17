@@ -191,34 +191,47 @@ getPort = do
 
 main :: IO ()
 main = do
+    putStrLn "Starting application initialization..."
     port <- getPort
-    putStrLn $ "Starting server on port " ++ show port ++ "..."
+    putStrLn $ "Port configuration: " ++ show port
     
     -- Start the server with minimal configuration first
+    putStrLn "Starting server with minimal configuration..."
     Scotty.scotty port $ do
         -- Health check endpoint (completely independent)
         Scotty.get "/health" $ do
+            liftIO $ putStrLn "Health check endpoint accessed"
             Scotty.text "OK"
             
         -- Swagger documentation endpoint (also independent)
         Scotty.get "/swagger.json" $ do
+            liftIO $ putStrLn "Swagger documentation endpoint accessed"
             Scotty.json apiDocs
             
         -- All other routes will return 503 Service Unavailable until DB is ready
         Scotty.middleware $ \app req respond -> do
+            liftIO $ putStrLn $ "Received request to: " ++ show (pathInfo req)
             if pathInfo req `notElem` [["health"], ["swagger.json"]]
                 then respond $ responseLBS status503 [] "Database initialization in progress"
                 else app req respond
 
     -- After server is started, initialize the database
-    putStrLn "Initializing database pool..."
+    putStrLn "Starting database initialization..."
+    putStrLn "Getting database configuration..."
+    dbConfig <- getDbConfig
+    putStrLn "Attempting to create database pool..."
     pool <- initDbPool
+    putStrLn "Database pool created successfully"
     
     -- Once database is ready, start the full application
+    putStrLn "Starting full application with all routes..."
     Scotty.scotty port $ do
         -- Keep the health check endpoint
         Scotty.get "/health" $ do
+            liftIO $ putStrLn "Health check endpoint accessed (full app)"
             Scotty.text "OK"
             
         -- Add all other routes
         app pool
+    
+    putStrLn "Application fully initialized and running..."
