@@ -5,7 +5,7 @@ module Main (main) where
 
 import qualified Web.Scotty as Scotty
 import Config (initDbPool, getDbConfig)
-import Data.Pool (Pool)
+import Data.Pool (Pool, withResource)
 import Database.PostgreSQL.Simple (Connection, execute_, Only(..), query_, ConnectInfo(..))
 import Data.Aeson (ToJSON(..), FromJSON(..), object, (.=), Value)
 import qualified Data.Text as T
@@ -16,7 +16,6 @@ import Web.Scotty (ActionM)
 import Network.HTTP.Types.Status (status201, status400, status404, status500, status503)
 import Network.Wai (pathInfo, Response, Request, responseLBS)
 import qualified Models as M
-import Data.Pool (withResource)
 import System.Environment (lookupEnv)
 import Data.Maybe (fromMaybe)
 import Text.Read (readMaybe)
@@ -167,6 +166,10 @@ main = do
         putStrLn $ "Database connection error: " ++ show (e :: SomeException)
         error "Failed to initialize database pool"
     putStrLn "Database pool created successfully"
+    
+    -- Run database migrations
+    putStrLn "Running database migrations..."
+    withResource pool runMigrations
     
     putStrLn $ "Starting Scotty server on port " ++ show port
     Scotty.scotty port $ do
