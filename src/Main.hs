@@ -6,7 +6,7 @@ module Main (main) where
 import qualified Web.Scotty as Scotty
 import Config (initDbPool, getDbConfig)
 import Data.Pool (Pool, withResource)
-import Database.PostgreSQL.Simple (Connection, execute_, Only(..))
+import Database.PostgreSQL.Simple (Connection, execute_, Only(..), query_)
 import Data.Aeson (ToJSON(..), FromJSON(..), object, (.=), Value)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
@@ -166,19 +166,21 @@ app pool = do
 runMigrations :: Connection -> IO ()
 runMigrations conn = do
     putStrLn "Running database migrations..."
+    
     -- Create users table if it doesn't exist
+    putStrLn "Checking users table..."
     execute_ conn "CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL)"
-    -- Try to add unique constraint, ignore if it already exists
-    execute_ conn "DO $$ \
-                 \BEGIN \
-                 \    IF NOT EXISTS ( \
-                 \        SELECT 1 FROM pg_constraint \
-                 \        WHERE conname = 'users_email_unique' \
-                 \    ) THEN \
-                 \        ALTER TABLE users ADD CONSTRAINT users_email_unique UNIQUE (email); \
-                 \    END IF; \
-                 \END; \
-                 \$$;"
+    
+    -- Check if the constraint exists before trying to add it
+    putStrLn "Checking email uniqueness constraint..."
+    constraintExists <- query_ conn "SELECT COUNT(*) FROM pg_constraint WHERE conname = 'users_email_unique'" :: IO [Only Int]
+    case constraintExists of
+        [Only 0] -> do
+            putStrLn "Adding email uniqueness constraint..."
+            _ <- execute_ conn "ALTER TABLE users ADD CONSTRAINT users_email_unique UNIQUE (email)"
+            putStrLn "Constraint added successfully"
+        _ -> putStrLn "Email uniqueness constraint already exists, skipping..."
+    
     putStrLn "Migrations completed successfully"
 
 -- Get port from environment variable
