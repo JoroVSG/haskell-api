@@ -47,7 +47,7 @@ initDbPool :: IO (Pool Connection)
 initDbPool = do
     dbConfig <- getDbConfig
     newPool $ defaultPoolConfig
-        (connect dbConfig)  -- create
-        close              -- destroy
-        10                -- seconds to keep idle connections
-        10                -- max connections 
+        (connect dbConfig)  -- create connection
+        close              -- destroy connection
+        0.5               -- seconds to keep stripe unused before closing
+        10                -- maximum number of resources to keep alive 
