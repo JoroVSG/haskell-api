@@ -28,11 +28,20 @@ RUN stack build --system-ghc
 RUN cp $(stack path --local-install-root)/bin/haskell-api .
 
 # Start a new stage with a minimal image
-FROM ubuntu:22.04
+FROM debian:bullseye-slim
 
 # Install required system libraries
 RUN apt-get update && \
-    apt-get install -y libpq5 postgresql-client-14 ca-certificates && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    libpq5 \
+    wget \
+    gnupg2 && \
+    sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt bullseye-pgdg main" > /etc/apt/sources.list.d/pgdg.list' && \
+    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends postgresql-client-14 && \
+    apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user
