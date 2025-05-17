@@ -124,45 +124,6 @@ jsonError message = do
     Scotty.status status400
     Scotty.json $ object ["error" .= message]
 
--- API implementation
-app :: Pool Connection -> Scotty.ScottyM ()
-app pool = do
-    -- List users endpoint
-    Scotty.get "/users" $ do
-        users <- liftIO $ withResource pool M.getUsers
-        Scotty.json users
-
-    -- Get user by ID endpoint
-    Scotty.get "/users/:id" $ do
-        uid <- Scotty.pathParam "id"
-        users <- liftIO $ withResource pool (`M.getUserById` uid)
-        case users of
-            [] -> do
-                Scotty.status status404
-                Scotty.json $ object ["error" .= ("User not found" :: String)]
-            (user:_) -> Scotty.json user
-
-    -- Create user endpoint
-    Scotty.post "/users" $ do
-        user <- Scotty.jsonData :: ActionM M.User
-        result <- liftIO $ withResource pool (`M.createUser` user)
-        case result of
-            (newUser:_) -> do
-                Scotty.status status201
-                Scotty.json newUser
-            [] -> do
-                Scotty.status status500
-                Scotty.json $ object ["error" .= ("Failed to create user" :: String)]
-
-    -- API documentation endpoint
-    Scotty.get "/swagger.json" $ do
-        Scotty.json apiDocs
-
-    -- Not found handler
-    Scotty.notFound $ do
-        Scotty.status status404
-        Scotty.json $ object ["error" .= ("Route not found" :: String)]
-
 -- Run database migrations
 runMigrations :: Connection -> IO ()
 runMigrations conn = do
@@ -209,6 +170,7 @@ main = do
     
     putStrLn $ "Starting Scotty server on port " ++ show port
     Scotty.scotty port $ do
+        -- Logging middleware
         Scotty.middleware $ \app req respond -> do
             liftIO $ putStrLn $ "Received request to: " ++ show (pathInfo req)
             app req respond
@@ -230,7 +192,7 @@ main = do
             Scotty.json users
 
         Scotty.get "/users/:id" $ do
-            uid <- Scotty.param "id"
+            uid <- Scotty.pathParam "id"
             liftIO $ putStrLn $ "Getting user by id: " ++ show uid
             users <- liftIO $ withResource pool (`M.getUserById` uid)
             case users of
@@ -250,5 +212,10 @@ main = do
                 [] -> do
                     Scotty.status status500
                     Scotty.json $ object ["error" .= ("Failed to create user" :: String)]
+
+        -- Not found handler
+        Scotty.notFound $ do
+            Scotty.status status404
+            Scotty.json $ object ["error" .= ("Route not found" :: String)]
 
     putStrLn "Application fully initialized and running..."
