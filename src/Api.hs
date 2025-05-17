@@ -15,16 +15,16 @@ import Network.HTTP.Types.Status
 
 type DbPool = Pool Connection
 
--- Start the application
-startApp :: DbPool -> IO ()
-startApp pool = scotty 3000 $ do
+-- Define the application routes
+startApp :: DbPool -> ScottyM ()
+startApp pool = do
     -- User endpoints
     get "/users" $ do
         users <- liftIO $ withResource pool M.getUsers
         json users
 
     get "/users/:id" $ do
-        uid <- param "id"
+        uid <- pathParam "id"
         users <- liftIO $ withResource pool (`M.getUserById` uid)
         case users of
             [] -> status status404
@@ -43,7 +43,7 @@ startApp pool = scotty 3000 $ do
         json employees
 
     get "/employees/:id" $ do
-        eid <- param "id"
+        eid <- pathParam "id"
         employees <- liftIO $ withResource pool (`M.getEmployeeById` eid)
         case employees of
             [] -> do
@@ -61,7 +61,7 @@ startApp pool = scotty 3000 $ do
                 json $ object ["error" .= ("Failed to create employee" :: String)]
 
     put "/employees/:id" $ do
-        eid <- param "id"
+        eid <- pathParam "id"
         employee <- jsonData :: ActionM M.Employee
         result <- liftIO $ withResource pool (\conn -> M.updateEmployee conn eid employee)
         case result of
@@ -71,7 +71,7 @@ startApp pool = scotty 3000 $ do
             (updatedEmployee:_) -> json updatedEmployee
 
     delete "/employees/:id" $ do
-        eid <- param "id"
+        eid <- pathParam "id"
         success <- liftIO $ withResource pool (`M.deleteEmployee` eid)
         if success
             then status status204

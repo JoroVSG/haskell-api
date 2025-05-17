@@ -147,7 +147,7 @@ apiDocs = object
                             , "employeeAddress" .= object [ "type" .= ("string" :: String) ]
                             , "employeeSite" .= object [ "type" .= ("string" :: String) ]
                             , "employeeManagerId" .= object [ "type" .= ("integer" :: String) ]
-                            , "employeeContract" .= object [ "type" .= ("string" :: String), "enum" .= ["FULL_TIME", "PART_TIME"] ]
+                            , "employeeContract" .= object [ "type" .= ("string" :: String), "enum" .= (["FULL_TIME", "PART_TIME"] :: [String]) ]
                             , "employeeStartDate" .= object [ "type" .= ("string" :: String), "format" .= ("date" :: String) ]
                             , "employeeEndDate" .= object [ "type" .= ("string" :: String), "format" .= ("date" :: String) ]
                             , "employeeDepartment" .= object [ "type" .= ("string" :: String) ]
