@@ -1,13 +1,15 @@
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+dockerfilePath = "ui/Dockerfile"
+buildPath = "ui"
 
 [deploy]
-startCommand = "./start.sh"
-healthcheckPath = "/health"
-healthcheckTimeout = 60
+startCommand = "nginx -g 'daemon off;'"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
+healthcheckPath = "/"
+healthcheckTimeout = 300
 
 [deploy.env]
-PORT = "3000" 
+PORT = "80"
+VITE_API_URL = "https://hackathon-api-production-d702.up.railway.app" 
