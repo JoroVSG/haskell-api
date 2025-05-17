@@ -46,8 +46,9 @@ getDbConfig = do
 initDbPool :: IO (Pool Connection)
 initDbPool = do
     dbConfig <- getDbConfig
-    newPool $ defaultPoolConfig
+    createPool
         (connect dbConfig)  -- create connection
         close              -- destroy connection
+        2                 -- number of stripes (sub-pools)
         0.5               -- seconds to keep stripe unused before closing
-        10                -- maximum number of resources to keep alive 
+        10                -- maximum number of resources per stripe 
