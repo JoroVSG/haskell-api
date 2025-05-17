@@ -1,0 +1,17 @@
+.git
+.stack-work
+dist
+dist-*
+*.o
+*.hi
+*.chi
+*.chs.h
+*.dyn_o
+*.dyn_hi
+*.prof
+*.aux
+*.hp
+*.eventlog
+.env
+*.swp
+*.swo 
