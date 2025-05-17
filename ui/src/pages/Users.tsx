@@ -60,12 +60,18 @@ export function Users() {
                 </Button>
             </Box>
 
-            <TableContainer component={Paper}>
-                <Table>
+            <TableContainer component={Paper} sx={{ 
+              width: '100%',
+              margin: 0,
+              '& .MuiTableCell-root': { 
+                padding: '8px 16px',
+              },
+            }}>
+                <Table size="small" sx={{ width: '100%', tableLayout: 'fixed' }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell>Name</TableCell>
-                            <TableCell>Email</TableCell>
+                            <TableCell width="50%">Name</TableCell>
+                            <TableCell width="50%">Email</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>

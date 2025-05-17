@@ -112,16 +112,25 @@ export function Employees() {
                 </Button>
             </Box>
 
-            <TableContainer component={Paper}>
-                <Table>
+            <TableContainer component={Paper} sx={{ 
+              width: '100%',
+              margin: 0,
+              '& .MuiTableCell-root': { 
+                padding: '8px 16px',
+              },
+              '& .MuiTableCell-head': {
+                fontWeight: 600,
+              }
+            }}>
+                <Table size="small" sx={{ width: '100%', tableLayout: 'fixed' }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell>Name</TableCell>
-                            <TableCell>Email</TableCell>
-                            <TableCell>Position</TableCell>
-                            <TableCell>Department</TableCell>
-                            <TableCell>Contract</TableCell>
-                            <TableCell>Actions</TableCell>
+                            <TableCell width="20%">Name</TableCell>
+                            <TableCell width="25%">Email</TableCell>
+                            <TableCell width="20%">Position</TableCell>
+                            <TableCell width="15%">Department</TableCell>
+                            <TableCell width="10%">Contract</TableCell>
+                            <TableCell width="10%">Actions</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
