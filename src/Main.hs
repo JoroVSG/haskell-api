@@ -134,7 +134,7 @@ app pool = do
 
     -- Get user by ID endpoint
     Scotty.get "/users/:id" $ do
-        uid <- Scotty.param "id"
+        uid <- Scotty.pathParam "id"
         users <- liftIO $ withResource pool (`M.getUserById` uid)
         case users of
             [] -> do
