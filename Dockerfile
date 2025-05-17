@@ -25,6 +25,7 @@ COPY . .
 
 # Build the project
 RUN stack build --system-ghc
+RUN cp $(stack path --local-install-root)/bin/haskell-api .
 
 # Start a new stage with a minimal image
 FROM ubuntu:22.04
@@ -42,7 +43,7 @@ USER app
 WORKDIR /home/app
 
 # Copy the built executable and required scripts
-COPY --from=builder /app/.stack-work/dist/*/build/haskell-api/haskell-api ./
+COPY --from=builder /app/haskell-api ./
 COPY --from=builder /app/migrations.sql ./
 COPY --from=builder /app/start.sh ./
 
