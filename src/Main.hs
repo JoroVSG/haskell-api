@@ -5,7 +5,7 @@ module Main (main) where
 
 import qualified Web.Scotty as Scotty
 import Config (initDbPool, getDbConfig)
-import Data.Pool (Pool, withResource)
+import Data.Pool (Pool)
 import Database.PostgreSQL.Simple (Connection, execute_, Only(..), query_, ConnectInfo(..))
 import Data.Aeson (ToJSON(..), FromJSON(..), object, (.=), Value)
 import qualified Data.Text as T
@@ -42,7 +42,7 @@ apiDocs = object
             [ "get" .= object
                 [ "summary" .= ("Health Check" :: String)
                 , "description" .= ("Returns the health status of the API" :: String)
-                , "produces" .= [("application/json" :: String)]
+                , "produces" .= ["application/json" :: String]
                 , "responses" .= object
                     [ "200" .= object
                         [ "description" .= ("Successful health check" :: String)
@@ -54,7 +54,7 @@ apiDocs = object
             [ "get" .= object
                 [ "summary" .= ("List Users" :: String)
                 , "description" .= ("Returns a list of all users" :: String)
-                , "produces" .= [("application/json" :: String)]
+                , "produces" .= ["application/json" :: String]
                 , "responses" .= object
                     [ "200" .= object
                         [ "description" .= ("List of users" :: String)
@@ -64,8 +64,8 @@ apiDocs = object
             , "post" .= object
                 [ "summary" .= ("Create User" :: String)
                 , "description" .= ("Creates a new user" :: String)
-                , "consumes" .= [("application/json" :: String)]
-                , "produces" .= [("application/json" :: String)]
+                , "consumes" .= ["application/json" :: String]
+                , "produces" .= ["application/json" :: String]
                 , "parameters" .= [ object
                     [ "name" .= ("body" :: String)
                     , "in" .= ("body" :: String)
@@ -104,7 +104,7 @@ apiDocs = object
                     , "type" .= ("integer" :: String)
                     ]
                 ]
-                , "produces" .= [("application/json" :: String)]
+                , "produces" .= ["application/json" :: String]
                 , "responses" .= object
                     [ "200" .= object
                         [ "description" .= ("User found" :: String)
