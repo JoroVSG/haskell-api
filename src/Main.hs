@@ -125,7 +125,7 @@ jsonError message = do
 -- API implementation
 app :: Pool Connection -> Scotty.ScottyM ()
 app pool = do
-    -- Health check endpoint
+    -- Health check endpoint (independent of database)
     Scotty.get "/health" $ do
         Scotty.json $ HealthResponse "OK"
 
@@ -190,7 +190,18 @@ main :: IO ()
 main = do
     port <- getPort
     putStrLn $ "Starting server on port " ++ show port ++ "..."
+    
+    -- Initialize the database pool asynchronously
     pool <- initDbPool
-    -- Run migrations
+    
+    -- Start the server immediately
+    Scotty.scotty port $ do
+        -- Health check endpoint (independent of database)
+        Scotty.get "/health" $ do
+            Scotty.json $ HealthResponse "OK"
+            
+        -- Initialize other routes that depend on the database
+        app pool
+        
+    -- Run migrations in the background after server is started
     withResource pool runMigrations
-    Scotty.scotty port (app pool)
