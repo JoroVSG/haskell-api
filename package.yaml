@@ -21,6 +21,8 @@ dependencies:
 - wai-extra
 - transformers
 - mtl
+- time
+- scientific
 
 executables:
   haskell-api:
