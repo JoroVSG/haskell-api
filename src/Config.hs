@@ -7,7 +7,7 @@ module Config
     ) where
 
 import Database.PostgreSQL.Simple
-import Data.Pool
+import Data.Pool (Pool, PoolConfig(..), newPool, defaultPoolConfig)
 import System.Environment (lookupEnv)
 import Data.Maybe (fromMaybe)
 import Text.Read (readMaybe)
@@ -46,9 +46,8 @@ getDbConfig = do
 initDbPool :: IO (Pool Connection)
 initDbPool = do
     dbConfig <- getDbConfig
-    createPool
+    newPool $ defaultPoolConfig
         (connect dbConfig)  -- create connection
         close              -- destroy connection
-        2                 -- number of stripes (sub-pools)
-        0.5               -- seconds to keep stripe unused before closing
-        10                -- maximum number of resources per stripe 
+        0.5               -- keep unused resource for 0.5 seconds
+        10                -- maximum 10 resources 
