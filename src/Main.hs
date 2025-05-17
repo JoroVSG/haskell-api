@@ -13,7 +13,8 @@ import qualified Data.Text.Lazy as TL
 import GHC.Generics
 import Control.Monad.IO.Class (liftIO)
 import Web.Scotty (ActionM)
-import Network.HTTP.Types.Status (status201, status400, status404, status500)
+import Network.HTTP.Types.Status (status201, status400, status404, status500, status503)
+import Network.Wai (pathInfo, Response, Request, responseLBS)
 import qualified Models as M
 import Data.Pool (withResource)
 import System.Environment (lookupEnv)
@@ -125,10 +126,6 @@ jsonError message = do
 -- API implementation
 app :: Pool Connection -> Scotty.ScottyM ()
 app pool = do
-    -- Health check endpoint (independent of database)
-    Scotty.get "/health" $ do
-        Scotty.json $ HealthResponse "OK"
-
     -- List users endpoint
     Scotty.get "/users" $ do
         users <- liftIO $ withResource pool M.getUsers
@@ -191,17 +188,31 @@ main = do
     port <- getPort
     putStrLn $ "Starting server on port " ++ show port ++ "..."
     
-    -- Initialize the database pool asynchronously
+    -- Start the server with minimal configuration first
+    Scotty.scotty port $ do
+        -- Health check endpoint (completely independent)
+        Scotty.get "/health" $ do
+            Scotty.text "OK"
+            
+        -- Swagger documentation endpoint (also independent)
+        Scotty.get "/swagger.json" $ do
+            Scotty.json apiDocs
+            
+        -- All other routes will return 503 Service Unavailable until DB is ready
+        Scotty.middleware $ \app req respond -> do
+            if pathInfo req `notElem` [["health"], ["swagger.json"]]
+                then respond $ responseLBS status503 [] "Database initialization in progress"
+                else app req respond
+
+    -- After server is started, initialize the database
+    putStrLn "Initializing database pool..."
     pool <- initDbPool
     
-    -- Start the server immediately
+    -- Once database is ready, start the full application
     Scotty.scotty port $ do
-        -- Health check endpoint (independent of database)
+        -- Keep the health check endpoint
         Scotty.get "/health" $ do
-            Scotty.json $ HealthResponse "OK"
+            Scotty.text "OK"
             
-        -- Initialize other routes that depend on the database
+        -- Add all other routes
         app pool
-        
-    -- Run migrations in the background after server is started
-    withResource pool runMigrations
