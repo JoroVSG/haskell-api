@@ -23,7 +23,7 @@ import Text.Read (readMaybe)
 import Control.Exception (SomeException, catch)
 
 -- Data types
-data HealthResponse = HealthResponse 
+newtype HealthResponse = HealthResponse 
     { status :: String
     } deriving (Show, Generic)
 
