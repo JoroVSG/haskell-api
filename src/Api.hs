@@ -11,6 +11,7 @@ import Data.Aeson (ToJSON, object, (.=))
 import Control.Monad.IO.Class (liftIO)
 import qualified Models as M
 import qualified Data.Text.Lazy as TL
+import Network.HTTP.Types.Status
 
 type DbPool = Pool Connection
 

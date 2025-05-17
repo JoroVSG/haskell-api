@@ -35,4 +35,5 @@ executable haskell-api
     , mtl
     , time
     , scientific
+    , bytestring
   default-language: Haskell2010

@@ -44,7 +44,7 @@ WORKDIR /home/app
 
 # Copy the built executable and required scripts
 COPY --from=builder /app/haskell-api ./
-COPY --from=builder /app/migrations.sql ./
+COPY --from=builder /app/migrations ./migrations
 COPY --from=builder /app/start.sh ./
 
 # Make start.sh executable

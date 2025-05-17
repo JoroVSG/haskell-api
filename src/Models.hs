@@ -1,5 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Models
     ( User(..)
@@ -19,8 +21,12 @@ import GHC.Generics
 import Data.Aeson
 import Database.PostgreSQL.Simple
 import Database.PostgreSQL.Simple.FromRow
+import Database.PostgreSQL.Simple.FromField
+import Database.PostgreSQL.Simple.ToField
 import Data.Text (Text)
 import Data.Time (UTCTime, Day)
+import qualified Data.ByteString.Char8 as BS
+import Control.Monad.Error.Class (throwError)
 
 -- Employment contract type
 data EmploymentContract = FullTime | PartTime
@@ -35,13 +41,17 @@ instance FromJSON EmploymentContract where
     parseJSON (String "PART_TIME") = pure PartTime
     parseJSON _ = fail "Invalid employment contract type"
 
-instance FromRow EmploymentContract where
-    fromRow = do
-        val <- field
-        case val of
+instance FromField EmploymentContract where
+    fromField f mdata = do
+        txt <- fromField @Text f mdata
+        case txt of
             "FULL_TIME" -> pure FullTime
             "PART_TIME" -> pure PartTime
-            _ -> fail "Invalid employment contract type"
+            _ -> returnError ConversionFailed f "Invalid employment contract type"
+
+instance ToField EmploymentContract where
+    toField FullTime = toField ("FULL_TIME" :: Text)
+    toField PartTime = toField ("PART_TIME" :: Text)
 
 data User = User
     { userId :: Maybe Int
@@ -107,7 +117,7 @@ createEmployee conn employee = query conn
     , employeeAddress employee
     , employeeSite employee
     , employeeManagerId employee
-    , show (employeeContract employee)
+    , employeeContract employee
     , employeeStartDate employee
     , employeeEndDate employee
     , employeeDepartment employee
@@ -145,7 +155,7 @@ updateEmployee conn eid employee = query conn
     , employeeAddress employee
     , employeeSite employee
     , employeeManagerId employee
-    , show (employeeContract employee)
+    , employeeContract employee
     , employeeStartDate employee
     , employeeEndDate employee
     , employeeDepartment employee
