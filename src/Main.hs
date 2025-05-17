@@ -166,14 +166,18 @@ app pool = do
 runMigrations :: Connection -> IO ()
 runMigrations conn = do
     putStrLn "Running database migrations..."
+    -- Create users table if it doesn't exist
     execute_ conn "CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL)"
-    execute_ conn "DO $$ BEGIN \
-                 \    BEGIN \
+    -- Try to add unique constraint, ignore if it already exists
+    execute_ conn "DO $$ \
+                 \BEGIN \
+                 \    IF NOT EXISTS ( \
+                 \        SELECT 1 FROM pg_constraint \
+                 \        WHERE conname = 'users_email_unique' \
+                 \    ) THEN \
                  \        ALTER TABLE users ADD CONSTRAINT users_email_unique UNIQUE (email); \
-                 \    EXCEPTION \
-                 \        WHEN duplicate_table THEN \
-                 \        NULL; \
-                 \    END; \
+                 \    END IF; \
+                 \END; \
                  \$$;"
     putStrLn "Migrations completed successfully"
 
