@@ -35,24 +35,10 @@ WORKDIR /home/app
 # Copy the built executable and migrations
 COPY --from=builder /app/.stack-work/dist/*/build/haskell-api/haskell-api ./
 COPY migrations.sql ./
+COPY start.sh ./
 
-# Create startup script
-COPY --chown=app:app <<'EOF' /home/app/start.sh
-#!/bin/bash
-# Wait for PostgreSQL to be ready
-until PGPASSWORD=$PGPASSWORD psql -h "$PGHOST" -U "$PGUSER" -d "$PGDATABASE" -c '\q'; do
-  echo "Postgres is unavailable - sleeping"
-  sleep 1
-done
-
-echo "Postgres is up - running migrations"
-PGPASSWORD=$PGPASSWORD psql -h "$PGHOST" -U "$PGUSER" -d "$PGDATABASE" -f migrations.sql
-
-echo "Starting application"
-exec ./haskell-api
-EOF
-
-RUN chmod +x /home/app/start.sh
+# Make the startup script executable
+RUN chmod +x start.sh
 
 # Expose the port
 EXPOSE 3000
