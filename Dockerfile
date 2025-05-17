@@ -44,16 +44,9 @@ WORKDIR /home/app
 
 # Copy the built executable and required scripts
 COPY --from=builder /app/haskell-api ./
-COPY --from=builder /app/migrations ./migrations
-COPY --from=builder /app/start.sh ./
-
-# Make start.sh executable
-USER root
-RUN chmod +x /home/app/start.sh
-USER app
 
 # Expose the port
 EXPOSE 3000
 
-# Run the application using start.sh
-CMD ["./start.sh"] 
+# Run the application
+CMD ["./haskell-api"] 

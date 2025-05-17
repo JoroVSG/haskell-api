@@ -21,6 +21,7 @@ import System.Environment (lookupEnv)
 import Data.Maybe (fromMaybe)
 import Text.Read (readMaybe)
 import Control.Exception (SomeException, catch)
+import Network.Wai.Middleware.Cors (cors, simpleCors, simpleCorsResourcePolicy, CorsResourcePolicy(..), simpleHeaders)
 
 -- Data types
 newtype HealthResponse = HealthResponse 
@@ -244,6 +245,32 @@ runMigrations conn = do
             _ <- execute_ conn "ALTER TABLE users ADD CONSTRAINT users_email_unique UNIQUE (email)"
             putStrLn "Constraint added successfully"
         _ -> putStrLn "Email uniqueness constraint already exists, skipping..."
+
+    -- Check if employees table exists
+    employeesExists <- query_ conn "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'employees')" :: IO [Only Bool]
+    case employeesExists of
+        [Only True] -> putStrLn "Employees table already exists, skipping creation"
+        _ -> do
+            putStrLn "Creating employees table..."
+            execute_ conn "CREATE TABLE IF NOT EXISTS employees (\
+                \id SERIAL PRIMARY KEY, \
+                \first_name TEXT NOT NULL, \
+                \middle_name TEXT, \
+                \last_name TEXT NOT NULL, \
+                \display_name TEXT NOT NULL, \
+                \email TEXT NOT NULL UNIQUE, \
+                \position TEXT NOT NULL, \
+                \address TEXT NOT NULL, \
+                \site TEXT NOT NULL, \
+                \manager_id INTEGER REFERENCES employees(id), \
+                \employment_contract TEXT NOT NULL CHECK (employment_contract IN ('FULL_TIME', 'PART_TIME')), \
+                \start_date DATE NOT NULL, \
+                \end_date DATE, \
+                \department TEXT NOT NULL, \
+                \picture_url TEXT, \
+                \created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP\
+                \)"
+            putStrLn "Employees table created successfully"
     
     putStrLn "Migrations completed successfully"
 
@@ -276,6 +303,13 @@ main = do
     
     putStrLn $ "Starting Scotty server on port " ++ show port
     Scotty.scotty port $ do
+        -- CORS middleware
+        Scotty.middleware $ cors $ const $ Just simpleCorsResourcePolicy
+            { corsRequestHeaders = simpleHeaders
+            , corsOrigins = Just (["http://localhost:5173"], True)
+            , corsMethods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+            }
+
         -- Logging middleware
         Scotty.middleware $ \app req respond -> do
             liftIO $ putStrLn $ "Received request to: " ++ show (pathInfo req)
