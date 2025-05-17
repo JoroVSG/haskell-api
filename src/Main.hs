@@ -16,6 +16,7 @@ import Web.Scotty (ActionM)
 import Network.HTTP.Types.Status (status201, status400, status404, status500, status503)
 import Network.Wai (pathInfo, Response, Request, responseLBS)
 import qualified Models as M
+import qualified Api
 import System.Environment (lookupEnv)
 import Data.Maybe (fromMaybe)
 import Text.Read (readMaybe)
@@ -114,6 +115,103 @@ apiDocs = object
                     ]
                 ]
             ]
+        , "/employees" .= object
+            [ "get" .= object
+                [ "summary" .= ("List Employees" :: String)
+                , "description" .= ("Returns a list of all employees" :: String)
+                , "produces" .= ["application/json" :: String]
+                , "responses" .= object
+                    [ "200" .= object
+                        [ "description" .= ("List of employees" :: String)
+                        ]
+                    ]
+                ]
+            , "post" .= object
+                [ "summary" .= ("Create Employee" :: String)
+                , "description" .= ("Creates a new employee" :: String)
+                , "consumes" .= ["application/json" :: String]
+                , "produces" .= ["application/json" :: String]
+                , "parameters" .= [ object
+                    [ "name" .= ("body" :: String)
+                    , "in" .= ("body" :: String)
+                    , "required" .= True
+                    , "schema" .= object
+                        [ "type" .= ("object" :: String)
+                        , "properties" .= object
+                            [ "employeeFirstName" .= object [ "type" .= ("string" :: String) ]
+                            , "employeeMiddleName" .= object [ "type" .= ("string" :: String) ]
+                            , "employeeLastName" .= object [ "type" .= ("string" :: String) ]
+                            , "employeeDisplayName" .= object [ "type" .= ("string" :: String) ]
+                            , "employeeEmail" .= object [ "type" .= ("string" :: String) ]
+                            , "employeePosition" .= object [ "type" .= ("string" :: String) ]
+                            , "employeeAddress" .= object [ "type" .= ("string" :: String) ]
+                            , "employeeSite" .= object [ "type" .= ("string" :: String) ]
+                            , "employeeManagerId" .= object [ "type" .= ("integer" :: String) ]
+                            , "employeeContract" .= object [ "type" .= ("string" :: String), "enum" .= ["FULL_TIME", "PART_TIME"] ]
+                            , "employeeStartDate" .= object [ "type" .= ("string" :: String), "format" .= ("date" :: String) ]
+                            , "employeeEndDate" .= object [ "type" .= ("string" :: String), "format" .= ("date" :: String) ]
+                            , "employeeDepartment" .= object [ "type" .= ("string" :: String) ]
+                            , "employeePictureUrl" .= object [ "type" .= ("string" :: String) ]
+                            ]
+                        ]
+                    ]
+                ]
+                , "responses" .= object
+                    [ "201" .= object [ "description" .= ("Employee created successfully" :: String) ]
+                    , "400" .= object [ "description" .= ("Invalid request" :: String) ]
+                    ]
+                ]
+            ]
+        , "/employees/{id}" .= object
+            [ "get" .= object
+                [ "summary" .= ("Get Employee by ID" :: String)
+                , "description" .= ("Returns a single employee by ID" :: String)
+                , "parameters" .= [ object
+                    [ "name" .= ("id" :: String)
+                    , "in" .= ("path" :: String)
+                    , "required" .= True
+                    , "type" .= ("integer" :: String)
+                    ]
+                ]
+                , "produces" .= ["application/json" :: String]
+                , "responses" .= object
+                    [ "200" .= object [ "description" .= ("Employee found" :: String) ]
+                    , "404" .= object [ "description" .= ("Employee not found" :: String) ]
+                    ]
+                ]
+            , "put" .= object
+                [ "summary" .= ("Update Employee" :: String)
+                , "description" .= ("Updates an existing employee" :: String)
+                , "parameters" .= [ object
+                    [ "name" .= ("id" :: String)
+                    , "in" .= ("path" :: String)
+                    , "required" .= True
+                    , "type" .= ("integer" :: String)
+                    ]
+                ]
+                , "produces" .= ["application/json" :: String]
+                , "responses" .= object
+                    [ "200" .= object [ "description" .= ("Employee updated" :: String) ]
+                    , "404" .= object [ "description" .= ("Employee not found" :: String) ]
+                    ]
+                ]
+            , "delete" .= object
+                [ "summary" .= ("Delete Employee" :: String)
+                , "description" .= ("Deletes an employee" :: String)
+                , "parameters" .= [ object
+                    [ "name" .= ("id" :: String)
+                    , "in" .= ("path" :: String)
+                    , "required" .= True
+                    , "type" .= ("integer" :: String)
+                    ]
+                ]
+                , "produces" .= ["application/json" :: String]
+                , "responses" .= object
+                    [ "204" .= object [ "description" .= ("Employee deleted" :: String) ]
+                    , "404" .= object [ "description" .= ("Employee not found" :: String) ]
+                    ]
+                ]
+            ]
         ]
     ]
 
@@ -193,37 +291,7 @@ main = do
             liftIO $ putStrLn "Swagger documentation endpoint accessed"
             Scotty.json apiDocs
             
-        -- User routes
-        Scotty.get "/users" $ do
-            liftIO $ putStrLn "Getting all users"
-            users <- liftIO $ withResource pool M.getUsers
-            Scotty.json users
-
-        Scotty.get "/users/:id" $ do
-            uid <- Scotty.pathParam "id"
-            liftIO $ putStrLn $ "Getting user by id: " ++ show uid
-            users <- liftIO $ withResource pool (`M.getUserById` uid)
-            case users of
-                [] -> do
-                    Scotty.status status404
-                    Scotty.json $ object ["error" .= ("User not found" :: String)]
-                (user:_) -> Scotty.json user
-
-        Scotty.post "/users" $ do
-            user <- Scotty.jsonData :: ActionM M.User
-            liftIO $ putStrLn $ "Creating new user: " ++ show user
-            result <- liftIO $ withResource pool (`M.createUser` user)
-            case result of
-                (newUser:_) -> do
-                    Scotty.status status201
-                    Scotty.json newUser
-                [] -> do
-                    Scotty.status status500
-                    Scotty.json $ object ["error" .= ("Failed to create user" :: String)]
-
-        -- Not found handler
-        Scotty.notFound $ do
-            Scotty.status status404
-            Scotty.json $ object ["error" .= ("Route not found" :: String)]
+        -- Use the Api module for all routes
+        Api.startApp pool
 
     putStrLn "Application fully initialized and running..."
