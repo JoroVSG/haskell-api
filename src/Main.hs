@@ -128,11 +128,16 @@ runMigrations :: Connection -> IO ()
 runMigrations conn = do
     putStrLn "Running database migrations..."
     
-    -- Create users table if it doesn't exist
-    putStrLn "Checking users table..."
-    execute_ conn "CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL)"
+    -- Check if users table exists
+    tableExists <- query_ conn "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'users')" :: IO [Only Bool]
+    case tableExists of
+        [Only True] -> putStrLn "Users table already exists, skipping creation"
+        _ -> do
+            putStrLn "Creating users table..."
+            execute_ conn "CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL)"
+            putStrLn "Users table created successfully"
     
-    -- Check if the constraint exists before trying to add it
+    -- Check if email uniqueness constraint exists
     putStrLn "Checking email uniqueness constraint..."
     constraintExists <- query_ conn "SELECT COUNT(*) FROM pg_constraint WHERE conname = 'users_email_unique'" :: IO [Only Int]
     case constraintExists of
