@@ -6,7 +6,7 @@ module Main (main) where
 import qualified Web.Scotty as Scotty
 import Config (initDbPool, getDbConfig)
 import Data.Pool (Pool, withResource)
-import Database.PostgreSQL.Simple (Connection, execute_, Only(..), query_)
+import Database.PostgreSQL.Simple (Connection, execute_, Only(..), query_, ConnectInfo(..))
 import Data.Aeson (ToJSON(..), FromJSON(..), object, (.=), Value)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
@@ -20,6 +20,7 @@ import Data.Pool (withResource)
 import System.Environment (lookupEnv)
 import Data.Maybe (fromMaybe)
 import Text.Read (readMaybe)
+import Control.Exception (SomeException, catch)
 
 -- Data types
 data HealthResponse = HealthResponse 
@@ -194,44 +195,60 @@ main = do
     putStrLn "Starting application initialization..."
     port <- getPort
     putStrLn $ "Port configuration: " ++ show port
+
+    putStrLn "Starting database initialization..."
+    putStrLn "Getting database configuration..."
+    dbConfig <- getDbConfig
+    putStrLn $ "Database config obtained: " ++ show (connectHost dbConfig) ++ ":" ++ show (connectPort dbConfig)
     
-    -- Start the server with minimal configuration first
-    putStrLn "Starting server with minimal configuration..."
+    putStrLn "Attempting to create database pool..."
+    pool <- initDbPool `catch` \e -> do
+        putStrLn $ "Database connection error: " ++ show (e :: SomeException)
+        error "Failed to initialize database pool"
+    putStrLn "Database pool created successfully"
+    
+    putStrLn $ "Starting Scotty server on port " ++ show port
     Scotty.scotty port $ do
-        -- Health check endpoint (completely independent)
+        Scotty.middleware $ \app req respond -> do
+            liftIO $ putStrLn $ "Received request to: " ++ show (pathInfo req)
+            app req respond
+
+        -- Health check endpoint
         Scotty.get "/health" $ do
             liftIO $ putStrLn "Health check endpoint accessed"
-            Scotty.text "OK"
+            Scotty.json $ object ["status" .= ("OK" :: String)]
             
-        -- Swagger documentation endpoint (also independent)
+        -- Swagger documentation endpoint
         Scotty.get "/swagger.json" $ do
             liftIO $ putStrLn "Swagger documentation endpoint accessed"
             Scotty.json apiDocs
             
-        -- All other routes will return 503 Service Unavailable until DB is ready
-        Scotty.middleware $ \app req respond -> do
-            liftIO $ putStrLn $ "Received request to: " ++ show (pathInfo req)
-            if pathInfo req `notElem` [["health"], ["swagger.json"]]
-                then respond $ responseLBS status503 [] "Database initialization in progress"
-                else app req respond
+        -- User routes
+        Scotty.get "/users" $ do
+            liftIO $ putStrLn "Getting all users"
+            users <- liftIO $ withResource pool M.getUsers
+            Scotty.json users
 
-    -- After server is started, initialize the database
-    putStrLn "Starting database initialization..."
-    putStrLn "Getting database configuration..."
-    dbConfig <- getDbConfig
-    putStrLn "Attempting to create database pool..."
-    pool <- initDbPool
-    putStrLn "Database pool created successfully"
-    
-    -- Once database is ready, start the full application
-    putStrLn "Starting full application with all routes..."
-    Scotty.scotty port $ do
-        -- Keep the health check endpoint
-        Scotty.get "/health" $ do
-            liftIO $ putStrLn "Health check endpoint accessed (full app)"
-            Scotty.text "OK"
-            
-        -- Add all other routes
-        app pool
-    
+        Scotty.get "/users/:id" $ do
+            uid <- Scotty.param "id"
+            liftIO $ putStrLn $ "Getting user by id: " ++ show uid
+            users <- liftIO $ withResource pool (`M.getUserById` uid)
+            case users of
+                [] -> do
+                    Scotty.status status404
+                    Scotty.json $ object ["error" .= ("User not found" :: String)]
+                (user:_) -> Scotty.json user
+
+        Scotty.post "/users" $ do
+            user <- Scotty.jsonData :: ActionM M.User
+            liftIO $ putStrLn $ "Creating new user: " ++ show user
+            result <- liftIO $ withResource pool (`M.createUser` user)
+            case result of
+                (newUser:_) -> do
+                    Scotty.status status201
+                    Scotty.json newUser
+                [] -> do
+                    Scotty.status status500
+                    Scotty.json $ object ["error" .= ("Failed to create user" :: String)]
+
     putStrLn "Application fully initialized and running..."
