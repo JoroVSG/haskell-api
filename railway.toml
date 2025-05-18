@@ -1,7 +1,6 @@
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "ui/Dockerfile.railway"
-buildPath = "ui"
+dockerfilePath = "Dockerfile.ui"
 
 [deploy]
 startCommand = "nginx -g 'daemon off;'"
