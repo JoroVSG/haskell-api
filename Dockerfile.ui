@@ -3,17 +3,14 @@ FROM node:20-alpine as build
 
 WORKDIR /app
 
-# Debug: Show working directory and contents
-RUN pwd && ls -la
-
-# Copy UI directory
-COPY ui/ .
-
-# Debug: Show contents after copy
-RUN ls -la
+# Copy package files first
+COPY ui/package*.json ./
 
 # Install dependencies
 RUN npm install
+
+# Copy the rest of the source code
+COPY ui/ ./
 
 # Create production build
 RUN npm run build
@@ -25,9 +22,13 @@ FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 
 # Copy nginx configuration
-COPY --from=build /app/nginx.conf /etc/nginx/conf.d/default.conf
+COPY ui/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Expose port
 EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s \
+    CMD curl -f http://localhost:80/ || exit 1
 
 CMD ["nginx", "-g", "daemon off;"] 
