@@ -3,14 +3,14 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile.ui"
 
 [deploy]
-startCommand = "sh -c 'nginx -t && nginx -g \"daemon off;\"'"
+startCommand = "node server.js"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 healthcheckPath = "/health"
-healthcheckTimeout = 120
+healthcheckTimeout = 60
 healthcheckInterval = 15
 
 [deploy.env]
 PORT = "80"
-NGINX_PORT = "80"
+NODE_ENV = "production"
 VITE_API_URL = "https://hackathon-api-production-d702.up.railway.app" 
