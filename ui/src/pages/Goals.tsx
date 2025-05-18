@@ -137,7 +137,7 @@ export function Goals() {
                       variant="body2" 
                       sx={{ 
                         fontWeight: 600,
-                        color: (theme) => alpha(goal.color, 0.9),
+                        color: alpha(goal.color, 0.9),
                       }}
                     >
                       {goal.progress}%
@@ -149,7 +149,7 @@ export function Goals() {
                     sx={{ 
                       height: 8,
                       borderRadius: 4,
-                      backgroundColor: (theme) => alpha(goal.color, 0.12),
+                      backgroundColor: alpha(goal.color, 0.12),
                       '& .MuiLinearProgress-bar': {
                         background: goal.gradient,
                       },

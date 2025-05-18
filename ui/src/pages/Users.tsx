@@ -19,7 +19,6 @@ import {
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { userApi } from '../api/client';
-import type { User } from '../types/api';
 
 export function Users() {
     const [open, setOpen] = useState(false);

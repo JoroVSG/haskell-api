@@ -23,19 +23,6 @@ import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon } from '@mui/ico
 import { employeeApi } from '../api/client';
 import type { Employee, EmploymentContract } from '../types/api';
 
-const defaultEmployee: Omit<Employee, 'employeeId' | 'employeeCreatedAt'> = {
-    employeeFirstName: '',
-    employeeLastName: '',
-    employeeDisplayName: '',
-    employeeEmail: '',
-    employeePosition: '',
-    employeeAddress: '',
-    employeeSite: '',
-    employeeContract: 'FULL_TIME',
-    employeeStartDate: new Date().toISOString().split('T')[0],
-    employeeDepartment: '',
-};
-
 export function Employees() {
     const [open, setOpen] = useState(false);
     const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
