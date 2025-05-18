@@ -1,30 +1,32 @@
 # Build stage
-FROM node:20-alpine as build
+FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json ./
+# Copy package files first
+COPY package*.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm install
 
 # Copy source code
-COPY . .
+COPY . ./
 
 # Create production build
 RUN npm run build
 
-# Serve stage
-FROM nginx:alpine
+# Install express
+RUN npm install express
 
-# Copy built assets from build stage
-COPY --from=build /app/dist /usr/share/nginx/html
-
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Add curl for debugging
+RUN apk add --no-cache curl
 
 # Expose port
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"] 
+# Health check
+HEALTHCHECK --interval=10s --timeout=3s --start-period=30s \
+    CMD curl -f http://localhost:${PORT:-80}/health || exit 1
+
+# Start server
+CMD ["node", "server.js"] 
