@@ -15,8 +15,18 @@ COPY . ./
 # Create production build
 RUN npm run build
 
-# Install express
-RUN npm install express
+# Create a production directory
+RUN mkdir -p /app/prod && \
+    cp -r dist /app/prod/ && \
+    cp server.js /app/prod/ && \
+    cp package.json /app/prod/
+
+# Switch to production directory
+WORKDIR /app/prod
+
+# Install only production dependencies
+RUN npm install express --save && \
+    npm install --production
 
 # Add curl for debugging
 RUN apk add --no-cache curl
